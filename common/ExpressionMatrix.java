@@ -112,7 +112,8 @@ public class ExpressionMatrix {
 
 		int i = 0;
 		for(String gene : genes){
-			double[] inputVector = data[i];
+			// PATCH(issue-3): copy row before jittering to avoid mutating original data in-place.
+			double[] inputVector = Arrays.copyOf(data[i], data[i].length);
 			// Add white noise to break ties
 			for(int ii = 0; ii<inputVector.length; ii++){
 				 inputVector[ii] = inputVector[ii] + random.nextDouble() / 1e5;
@@ -122,7 +123,8 @@ public class ExpressionMatrix {
 			// NAs are ignored (returned unchanged) and ties are resolved randomly
 			double[] rankedDoubleVector = new NaturalRanking(NaNStrategy.FIXED, TiesStrategy.SEQUENTIAL).rank(inputVector);
 			for(int j=0; j<rankedDoubleVector.length; j++){
-				if (rankedDoubleVector[j]==Double.NaN) {
+			// PATCH(issue-6): Double.NaN==Double.NaN is always false; use Double.isNaN().
+				if (Double.isNaN(rankedDoubleVector[j])) {
 					rankedVector[j] = 0;
 				}
 				else {
@@ -146,7 +148,8 @@ public class ExpressionMatrix {
 		// Select samples randomly
 		int[] bootsamples = new int[samples.size()];
 		for(int i = 0; i<bootsamples.length; i++){
-			bootsamples[i] = random.nextInt(samples.size()-1);
+			// PATCH(issue-1): was nextInt(samples.size()-1), excluded last sample.
+			bootsamples[i] = random.nextInt(samples.size());
 		}
 		this.bootsamples=bootsamples;
 		// Generate bootstrapped data structure
@@ -213,13 +216,17 @@ public class ExpressionMatrix {
 		int igene = 0;
 		for (String gene : genes){
 			double vector[] = new double[common.size()];
+			// PATCH(issue-7): populate NA boolean array (was allocated but never filled).
+			boolean[] naVector = new boolean[common.size()];
 			int i = 0;
 			for (String sample : common){
 				int j = samples.indexOf(sample);
 				vector[i] = data[igene][j];
+				naVector[i] = naBoolean[igene][j];
 				i++;
 			}
 			newdata[igene]=vector;
+			newdataNA[igene]=naVector;
 			igene++;
 		}
 		ExpressionMatrix newEm = new ExpressionMatrix(newdata, newdataNA, genes, common);

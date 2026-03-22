@@ -251,7 +251,8 @@ public class Aracne {
 						if (interactionSet.containsKey(regulators[i])){
 							interaction = interactionSet.get(regulators[i]);
 						}
-						interaction.put(targets[j], 1.0);
+						// PATCH(issue-8): preserve loaded interaction weights; only set default 1.0 if not already present.
+					interaction.putIfAbsent(targets[j], 1.0);
 						interactionSet.put(regulators[i], interaction);
 					}
 				}

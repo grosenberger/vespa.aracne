@@ -8,6 +8,7 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 
 /**
@@ -284,7 +285,8 @@ public class MI {
 		}
 
 		HashMap<String, short[]> tempData = new HashMap<String, short[]>();
-		Random r = new Random(seed);
+		// PATCH(issue-2): use MersenneTwister (consistent with main execution) instead of java.util.Random.
+		MersenneTwister r = new MersenneTwister(seed);
 
 		// Copy data matrix
 		for(int i=0; i<genes.length; i++){
@@ -374,7 +376,8 @@ public class MI {
 		double xybar = 0.0;
 		for (int i = 0; i < tailx.length; i++) {
 			xxbar += (tailMI[i] - xbar) * (tailMI[i] - xbar);
-			xybar += (tailMI[i] - xbar) * (y[i] - ybar);
+			// PATCH(issue-4): was y[i] (full survival array, wrong index); use tailx[i] (tail slice).
+			xybar += (tailMI[i] - xbar) * (tailx[i] - ybar);
 		}
 		double beta1 = xybar / xxbar;
 		double beta0 = ybar - beta1 * xbar;
@@ -641,6 +644,10 @@ public class MI {
 	private static double getInformation(double pXY, double pX, double pY){
 		if(pXY == 0){
 			return  0;
+		}
+		// PATCH(issue-5): guard against division by zero when marginals are zero.
+		if(pX * pY == 0){
+			return 0;
 		}
 		else{
 			// This little formula contains the entire MI calculation. Wow
