@@ -110,13 +110,22 @@ public class ExpressionMatrix {
 	public HashMap<String,short[]> rank(RandomGenerator random){
 		HashMap<String,short[]> rankData = new HashMap<String,short[]>();
 
+		// Generate per-gene seeds matching Rust's rank_parallel() pattern:
+		// seeds[i] = rng.next_u64(), each gene gets ChaCha8Rng(seeds[i])
+		int nf = genes.size();
+		long[] seeds = new long[nf];
+		for (int k = 0; k < nf; k++) {
+			seeds[k] = random.nextLong(); // ChaCha8Rng.nextLong() == nextU64()
+		}
+
 		int i = 0;
 		for(String gene : genes){
+			ChaCha8Rng localRng = new ChaCha8Rng(seeds[i]);
 			// PATCH(issue-3): copy row before jittering to avoid mutating original data in-place.
 			double[] inputVector = Arrays.copyOf(data[i], data[i].length);
-			// Add white noise to break ties
+			// Add white noise to break ties (always consume RNG even for NaN)
 			for(int ii = 0; ii<inputVector.length; ii++){
-				 inputVector[ii] = inputVector[ii] + random.nextDouble() / 1e5;
+				 inputVector[ii] = inputVector[ii] + localRng.nextDouble() / 1e5;
 			}
 
 			short[] rankedVector = new short[inputVector.length];

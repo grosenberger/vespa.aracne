@@ -11,7 +11,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Arrays;
@@ -19,8 +18,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomAdaptor;
+import org.apache.commons.math3.random.RandomGenerator;
+
+import common.ChaCha8Rng;
 
 import aracne.BootstrapConsolidator;
 
@@ -30,7 +30,7 @@ import common.ExpressionMatrix;
 public class Aracne {
 	// Variable definition
 	static NumberFormat formatter = new DecimalFormat("0.###E0");
-	static MersenneTwister random = new MersenneTwister();
+	static RandomGenerator random;
 
 	// Main Method
 	public static void main(String[] args) throws Exception {
@@ -167,9 +167,9 @@ public class Aracne {
 		
 		// Set seed if specified
 		if(seed!=null){
-			random = new MersenneTwister(seed);
+			random = new ChaCha8Rng((long)seed);
 		} else{
-			random = new MersenneTwister();
+			random = new ChaCha8Rng(System.nanoTime());
 		}
 
 		// Read expression matrix if present
@@ -268,7 +268,8 @@ public class Aracne {
 		}
 		// ARACNe bootstrapping / standard mode
 		else if(!isConsolidate){
-			String processId = new BigInteger(130, new RandomAdaptor(random)).toString(32);
+			// Use a separate RNG for processId to avoid consuming main RNG state
+			String processId = new java.math.BigInteger(130, new java.util.Random()).toString(32);
 
 			runAracne(
 					em,
@@ -344,9 +345,10 @@ public class Aracne {
 		// Bootstrap matrix
 		if(!noBootstrap){
 			System.out.println("Bootstrapping input matrix with "+targets.length+" targets and "+em.getSamples().size()+" samples.");
+			// Match Rust order: rank original (cor) -> bootstrap -> rank bootstrapped (MI)
+			rankDataCor = em.rank(random);
 			ExpressionMatrix bootstrapped = em.bootstrap(random);
 			rankData = bootstrapped.rank(random);
-			rankDataCor = em.rank(random);
 		} else {
 			rankData = em.rank(random);
 			rankDataCor = rankData;

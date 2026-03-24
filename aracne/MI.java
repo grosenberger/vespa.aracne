@@ -8,7 +8,9 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.commons.math3.random.MersenneTwister;
+import org.apache.commons.math3.random.RandomGenerator;
+
+import common.ChaCha8Rng;
 import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 
 /**
@@ -285,8 +287,8 @@ public class MI {
 		}
 
 		HashMap<String, short[]> tempData = new HashMap<String, short[]>();
-		// PATCH(issue-2): use MersenneTwister (consistent with main execution) instead of java.util.Random.
-		MersenneTwister r = new MersenneTwister(seed);
+		// PATCH(issue-2): use ChaCha8Rng for RNG parity with Rust implementation.
+		ChaCha8Rng r = new ChaCha8Rng((long)seed);
 
 		// Copy data matrix
 		for(int i=0; i<genes.length; i++){
