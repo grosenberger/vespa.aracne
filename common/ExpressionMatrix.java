@@ -47,7 +47,7 @@ public class ExpressionMatrix {
 			if (strLine0.length()>0) { // This statement will skip empty lines.
 				rows++;
 				if (rows == 0) {
-					String[] splitter = strLine0.split("\t");
+					String[] splitter = strLine0.split("\t", -1);
 					for (int j = 1; j<splitter.length; j++) {
 						if (splitter[j].trim().length() > 0) {
 							columns++;
@@ -74,7 +74,7 @@ public class ExpressionMatrix {
 
 		int i = 0;
 		while ((strLine = br.readLine()) != null) {
-			String[] splitter = strLine.split("\t");
+			String[] splitter = strLine.split("\t", -1);
 			if (i == 0) { // Fill the column names
 				for (int j = 1; j<splitter.length; j++) {
 					samples.add(splitter[j]);
